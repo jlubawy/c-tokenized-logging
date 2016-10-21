@@ -55,7 +55,7 @@ def main(parser):
     f.write(OUTPUT_FILE_HEADER)
     n = 0
     for module in modules:
-        f.write("#define LOG_MODULE_%-32s  (0x%08X)\n" % (module, n))
+        f.write("#define LOG_MODULE_%-32s  (%d)\n" % (module, n))
         n += 1
     f.write(OUTPUT_FILE_FOOTER)
     f.close()
