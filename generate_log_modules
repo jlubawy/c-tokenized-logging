@@ -38,6 +38,7 @@ def main(parser):
     if len(args) != 1:
         print "Must specify search path for C source files.\n"
         parser.print_help()
+        sys.exit(1)
 
     # Gather the C source file modules
     modules = []
