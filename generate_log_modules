@@ -7,6 +7,9 @@ import sys
 from optparse import OptionParser
 from os import path
 
+LOG_MODULE_PATTERN = "LOG_MODULE_DEFINE\((.*)\);"
+LOG_STRING_PATTERN = "^\s*LOG_(?:VAR_)*(?:INFO|WARNING|ERROR){1}\(\s+\"(.*?)\""
+
 LOG_MODULES_HEADER = """/* DO NOT MODIFY - AUTO-GENERATED */
 #ifndef LOG_MODULES_H
 #define LOG_MODULES_H
@@ -43,7 +46,7 @@ def parse_module(filename):
     with open(filename, 'r') as f:
         for line in f:
             # Look for module definitions
-            m = re.match("LOG_MODULE_DEFINE\((.*)\);", line)
+            m = re.match(LOG_MODULE_PATTERN, line)
             if m is not None:
                 if module['name'] != '':
                     parser_error(filename, line_num, "Found multiple module definitions in '%s'" % (filename))
@@ -56,7 +59,7 @@ def parse_module(filename):
                     parser_error(filename, line_num, "Expected module '%s' but got '%s'" % (expected_name, module['name'], filename))
 
             # Look for log strings
-            m = re.match("^\s*LOG_(?:VAR_)*(?:INFO|WARNING|ERROR){1}\(\s+\"(.*?)\"", line)
+            m = re.match(LOG_STRING_PATTERN, line)
             if m is not None:
                 if len(m.groups()) != 1:
                     parser_error(filename, line_num, "Format string regex error")
