@@ -1,34 +1,100 @@
 #!/usr/bin/env python
 
+import csv
+import re
 import sys
 
 from optparse import OptionParser
 from os import path
 
-OUTPUT_FILE_HEADER = """/* DO NOT MODIFY - AUTO-GENERATED */
+LOG_MODULES_HEADER = """/* DO NOT MODIFY - AUTO-GENERATED */
 #ifndef LOG_MODULES_H
 #define LOG_MODULES_H
 
 /* Log module definitions */
 """
 
-OUTPUT_FILE_FOOTER = """
+LOG_MODULES_FOOTER = """
 #endif
 """
 
+def parser_error(filename, line, msg):
+    print "Error: In '%s' line %d" % (filename, line)
+    print "       %s" % (msg)
+    sys.exit(1)
+
+
+def parse_module(filename):
+    module = {
+        'name': '',
+        'fmt_strs': []
+    }
+
+    if not path.isfile(filename):
+        return None
+
+    root, ext = path.splitext(filename)
+    if ext != '.c':
+        return None
+
+    expected_name = path.basename(root)
+
+    line_num = 1
+    with open(filename, 'r') as f:
+        for line in f:
+            # Look for module definitions
+            m = re.match("LOG_MODULE_DEFINE\((.*)\);", line)
+            if m is not None:
+                if module['name'] != '':
+                    parser_error(filename, line_num, "Found multiple module definitions in '%s'" % (filename))
+
+                if len(m.groups()) != 1:
+                    parser_error(filename, line_num, "Module regex error")
+
+                module['name'] = m.groups()[0].strip()
+                if module['name'] != expected_name:
+                    parser_error(filename, line_num, "Expected module '%s' but got '%s'" % (expected_name, module['name'], filename))
+
+            # Look for log strings
+            m = re.match("^\s*LOG_(?:VAR_)*(?:INFO|WARNING|ERROR){1}\(\s+\"(.*?)\"", line)
+            if m is not None:
+                if len(m.groups()) != 1:
+                    parser_error(filename, line_num, "Format string regex error")
+
+                else:
+                    fmt_str = m.groups()[0]
+                    if "\\\"" in line:
+                        parser_error(filename, line_num, "Format string cannot contain escaped double-quotes")
+
+                module['fmt_strs'].append((line_num, fmt_str))
+
+            line_num += 1
+
+    if module['name'] == '':
+        return None
+    else:
+        return module
+
+
 def walker(modules, dirname, names):
     for name in names:
-        p = path.join(dirname, name)
+        filename = path.join(dirname, name)
 
-        if path.isfile(p):
-            root, ext = path.splitext(p)
-            if ext == '.c':
-                module = path.basename(root)
-                if module in modules:
-                    print "Module '%s' was found more than once" % (module)
+        module = parse_module(filename)
+        if module is not None:
+            name = module['name']
+            fmt_strs = module['fmt_strs']
+
+            if len(fmt_strs) == 0:
+                    print "Error: No format strings found in '%s'" % (filename)
                     sys.exit(1)
 
-                modules.append(module)
+            for m in modules:
+                if name == m['name']:
+                    print "Error: Module name '%s' was found more than once" % (name)
+                    sys.exit(1)
+
+            modules.append(module)
 
 
 def main(parser):
@@ -43,26 +109,46 @@ def main(parser):
     # Gather the C source file modules
     modules = []
     path.walk(args[0], walker, modules)
-    modules = sorted(modules)
+    modules = sorted(modules, key=lambda k:k['name'])
 
     # If no modules/source files were found then exit with error
     if len(modules) == 0:
-        print "No C source files found."
+        print "Error: No C source files found."
         sys.exit(1)
 
-    # Write log module header
-    f = sys.stdout if options.filename == '-' else open(options.filename, 'w')
-    f.write(OUTPUT_FILE_HEADER)
+    # Create log modules header and log string CSV filesimport csv
+    csvFile = sys.stdout if options.csvFilename == '-' else open(options.csvFilename, 'wb')
+    csvWriter = csv.DictWriter(csvFile, quoting=csv.QUOTE_MINIMAL, fieldnames=['log_module', 'line', 'str'])
+    csvWriter.writeheader()
+
+    headerFile = sys.stdout if options.headerFilename == '-' else open(options.headerFilename, 'wb')
+    headerFile.write(LOG_MODULES_HEADER)
+
     n = 0
     for module in modules:
-        f.write("#define LOG_MODULE_%-32s  (%d)\n" % (module, n))
+        name = module['name']
+        fmt_strs = module['fmt_strs']
+
+        for fmt_str in fmt_strs:
+            csvWriter.writerow({
+                'log_module': n,
+                'line': fmt_str[0],
+                'str': fmt_str[1]
+            })
+
+        headerFile.write("#define LOG_MODULE_%-32s  (%d)\n" % (name, n))
+
         n += 1
-    f.write(OUTPUT_FILE_FOOTER)
-    f.close()
+
+    headerFile.write(LOG_MODULES_FOOTER)
+    headerFile.close()
+
+    csvFile.close()
 
 
 if __name__ == "__main__":
     parser = OptionParser("usage: %prog [OPTIONS] <search path>")
-    parser.add_option("--output", dest="filename", help="write generated log module header to FILE", metavar="FILE", default="-")
+    parser.add_option("--csv",    dest="csvFilename",    help="write generated log strings CSV to FILE",    metavar="FILE", default="-")
+    parser.add_option("--header", dest="headerFilename", help="write generated log modules header to FILE", metavar="FILE", default="-")
 
     main(parser)

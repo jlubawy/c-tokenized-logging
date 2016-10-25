@@ -1,0 +1,7 @@
+log_module,line,str
+0,13,"In main, line 13"
+1,13,Will log line 13
+1,14,Logging uint8_t %u
+2,9,Will log line 9
+2,11,Logging string %s
+3,16,Logging bool %u
