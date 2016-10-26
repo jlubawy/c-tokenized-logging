@@ -127,8 +127,8 @@ def main(parser):
     jsonDict = {
         'date': datetime.datetime.utcnow().isoformat(),
         'firmware_version': options.fwVersion,
-        'device_model': options.deviceModel,
-        'device_submodel': options.deviceSubmodel,
+        'device_model': int(options.deviceModel) if options.deviceModel is not None else options.deviceModel,
+        'device_submodel': int(options.deviceSubmodel) if options.deviceSubmodel is not None else options.deviceSubmodel,
         'log_strings': []
     }
 
