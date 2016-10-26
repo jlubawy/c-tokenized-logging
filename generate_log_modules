@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import csv
+import datetime
+import json
 import re
 import sys
 
@@ -120,38 +121,53 @@ def main(parser):
         sys.exit(1)
 
     # Create log modules header and log string CSV filesimport csv
-    csvFile = sys.stdout if options.csvFilename == '-' else open(options.csvFilename, 'wb')
-    csvWriter = csv.DictWriter(csvFile, quoting=csv.QUOTE_MINIMAL, fieldnames=['log_module', 'line', 'str'])
-    csvWriter.writeheader()
-
+    jsonFile   = sys.stdout if options.jsonFilename   == '-' else open(options.jsonFilename,   'wb')
     headerFile = sys.stdout if options.headerFilename == '-' else open(options.headerFilename, 'wb')
-    headerFile.write(LOG_MODULES_HEADER)
 
+    jsonDict = {
+        'date': datetime.datetime.utcnow().isoformat(),
+        'firmware_version': options.fwVersion,
+        'device_model': options.deviceModel,
+        'device_submodel': options.deviceSubmodel,
+        'log_strings': []
+    }
+
+    # Create header file and JSON dictionary
+    headerFile.write(LOG_MODULES_HEADER)
     n = 0
     for module in modules:
         name = module['name']
         fmt_strs = module['fmt_strs']
 
         for fmt_str in fmt_strs:
-            csvWriter.writerow({
-                'log_module': n,
+            jsonDict['log_strings'].append({
+                'module_name': name,
+                'module_num': n,
                 'line': fmt_str[0],
-                'str': fmt_str[1]
+                'fmt_str': fmt_str[1]
             })
 
         headerFile.write("#define LOG_MODULE_%-32s  (%d)\n" % (name, n))
 
         n += 1
-
     headerFile.write(LOG_MODULES_FOOTER)
-    headerFile.close()
 
-    csvFile.close()
+    # Write JSON to file
+    jsonFile.write(json.dumps(jsonDict, sort_keys=True, indent=4, separators=(',', ': ')))
+
+    # Close files if not stdout
+    if headerFile is not sys.stdout:
+        headerFile.close()
+    if jsonFile is not sys.stdout:
+        jsonFile.close()
 
 
 if __name__ == "__main__":
     parser = OptionParser("usage: %prog [OPTIONS] <search path>")
-    parser.add_option("--csv",    dest="csvFilename",    help="write generated log strings CSV to FILE",    metavar="FILE", default="-")
-    parser.add_option("--header", dest="headerFilename", help="write generated log modules header to FILE", metavar="FILE", default="-")
+    parser.add_option("--header",    dest="headerFilename", help="write generated log modules header to FILE", metavar="FILE", default="-")
+    parser.add_option("--fwVersion", dest="fwVersion",      help="firmware version string")
+    parser.add_option("--json",      dest="jsonFilename",   help="write generated log strings JSON to FILE", metavar="FILE", default="-")
+    parser.add_option("--model",     dest="deviceModel",    help="device model")
+    parser.add_option("--submodel",  dest="deviceSubmodel", help="device sub-model")
 
     main(parser)

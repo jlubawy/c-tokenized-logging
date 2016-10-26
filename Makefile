@@ -4,7 +4,7 @@ all: log
 
 .PHONY: log
 log:
-	./generate_log_modules --csv log_strings.csv --header log_modules.h .
+	./generate_log_modules --json log_strings.json --header log_modules.h .
 
 .PHONY: clean
 clean:

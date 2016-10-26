@@ -1,0 +1,44 @@
+{
+    "date": "2016-10-26T08:21:22.482000",
+    "device_model": null,
+    "device_submodel": null,
+    "firmware_version": null,
+    "log_strings": [
+        {
+            "fmt_str": "In main, line 13",
+            "line": 13,
+            "module_name": "main",
+            "module_num": 0
+        },
+        {
+            "fmt_str": "Will log line 13",
+            "line": 13,
+            "module_name": "module1",
+            "module_num": 1
+        },
+        {
+            "fmt_str": "Logging uint8_t %u",
+            "line": 14,
+            "module_name": "module1",
+            "module_num": 1
+        },
+        {
+            "fmt_str": "Will log line 9",
+            "line": 9,
+            "module_name": "module2",
+            "module_num": 2
+        },
+        {
+            "fmt_str": "Logging string %s",
+            "line": 11,
+            "module_name": "module2",
+            "module_num": 2
+        },
+        {
+            "fmt_str": "Logging bool %u",
+            "line": 16,
+            "module_name": "module3",
+            "module_num": 3
+        }
+    ]
+}
