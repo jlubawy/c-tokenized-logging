@@ -9,9 +9,7 @@ LOG_MODULE_DEFINE( module3 );
 void
 module3( void )
 {
-    LOG_ERROR(
-        "Should log line 11"
-    );
+    LOG_ERROR( "Should log line 11" );
 
     LOG_VAR_ERROR( "Logging bool %u", 1, LOG_TYPE_BOOL, FALSE );
 }
