@@ -10,7 +10,7 @@
 void
 log_printf( uint8_t level, uint32_t module, uint32_t line, uint8_t nArgs, ... )
 {
-    printf( "%"PRIu8",%"PRIu32",%"PRIu32",%"PRIu8",", level, module, line, nArgs );
+    printf( "^%"PRIu8",%"PRIu32",%"PRIu32",%"PRIu8",", level, module, line, nArgs );
 
     if ( nArgs > 0 )
     {
